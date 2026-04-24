@@ -64,48 +64,45 @@ class Enemy {
         if (!this.targetCell) return;
 
         const targetX = (this.targetCell.c + 0.5) * maze.cellSize;
-        const targetY = (this.targetCell.r + 0.5) * maze.cellSize;
+        // Target cell center
+        const tx = (this.targetCell.c + 0.5) * this.cs;
+        const ty = (this.targetCell.r + 0.5) * this.cs;
         
-        const dx = targetX - this.x;
-        const dy = targetY - this.y;
-        const dist = Math.hypot(dx, dy);
+        // Current cell
+        const curC = Math.floor(this.x / this.cs);
+        const curR = Math.floor(this.y / this.cs);
 
-        if (dist < 5) {
-            this.targetCell = (this.path && this.path.length > 0) ? this.path.shift() : null;
-            return;
-        }
-
-        const angleToTarget = Math.atan2(dy, dx);
-        this.angle += (angleToTarget - this.angle) * 0.1;
-        
-        const moveX = Math.cos(this.angle) * this.speed;
-        const moveY = Math.sin(this.angle) * this.speed;
-
-        // Anti-stuck check
-        const prevX = this.x;
-        const prevY = this.y;
-
-        if (!maze.isWall(this.x + moveX, this.y + moveY)) {
-            this.x += moveX;
-            this.y += moveY;
-        } else {
-            // Slide along walls if possible
-            if (!maze.isWall(this.x + moveX, this.y)) this.x += moveX;
-            else if (!maze.isWall(this.x, this.y + moveY)) this.y += moveY;
-            else {
-                // Completely stuck, repath
-                this.targetCell = null;
-                this.path = [];
+        // If we've reached the target cell, pick the next one
+        if (curC === this.targetCell.c && curR === this.targetCell.r) {
+            const dx = tx - this.x;
+            const dy = ty - this.y;
+            if (Math.hypot(dx, dy) < 20) { // Close enough to center
+                this.targetCell = this.path.length > 0 ? this.path.shift() : null;
+                return;
             }
         }
 
-        // If after moving we haven't actually changed position much, we're likely stuck
+        const angleToTarget = Math.atan2(ty - this.y, tx - this.x);
+        this.angle += (angleToTarget - this.angle) * 0.15;
+        
+        const vx = Math.cos(this.angle) * this.speed;
+        const vy = Math.sin(this.angle) * this.speed;
+
+        const prevX = this.x;
+        const prevY = this.y;
+
+        // Try moving with a smaller collision radius for smoother corners
+        if (!maze.isWall(this.x + vx, this.y + vy)) {
+            this.x += vx;
+            this.y += vy;
+        } else {
+            // Sliding logic
+            if (!maze.isWall(this.x + vx, this.y)) this.x += vx;
+            else if (!maze.isWall(this.x, this.y + vy)) this.y += vy;
+        }
+
+        // Robust Stuck Detection
         if (Math.hypot(this.x - prevX, this.y - prevY) < 0.1) {
-            this.stuckTimer = (this.stuckTimer || 0) + 1;
-            if (this.stuckTimer > 30) { // Stuck for 30 frames
-                this.targetCell = null;
-                this.path = [];
-                this.stuckTimer = 0;
             }
         } else {
             this.stuckTimer = 0;

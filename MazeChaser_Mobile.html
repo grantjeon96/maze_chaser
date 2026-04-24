@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Maze Chaser - 미로 추격자 (Mobile Final v3)</title>
+    <title>Maze Chaser - 미로 추격자 (Mobile Ultra Fix)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Orbitron:wght@500;900&display=swap" rel="stylesheet">
@@ -72,7 +72,6 @@ h1.glitch { font-family: var(--font-display); font-size: 3rem; font-weight: 900;
         </div>
     </div>
     <script>
-// --- Core Classes ---
 class Maze {
     constructor(cols, rows, cellSize) {
         this.cols = cols; this.rows = rows; this.cellSize = cellSize;
@@ -185,25 +184,23 @@ class Enemy {
     }
     move(maze) {
         if(!this.target) return;
-        let tx=(this.target.c+0.5)*this.cs, ty=(this.target.r+0.5)*this.cs;
-        let dx=tx-this.x, dy=ty-this.y, d=Math.hypot(dx,dy);
-        if(d<10){this.target=this.path.length>0?this.path.shift():null; return;}
-        let a=Math.atan2(dy,dx); this.angle+=(a-this.angle)*0.1;
-        let mx=Math.cos(this.angle)*this.speed, my=Math.sin(this.angle)*this.speed;
-        let px=this.x, py=this.y;
-        if(!maze.isWall(this.x+mx, this.y+my)){this.x+=mx; this.y+=my;}
-        else { 
-            if(!maze.isWall(this.x+mx,this.y))this.x+=mx; 
-            else if(!maze.isWall(this.x,this.y+my))this.y+=my; 
-            else {this.target=null; this.path=[];} 
+        const tx = (this.target.c + 0.5) * this.cs, ty = (this.target.r + 0.5) * this.cs;
+        const curC = Math.floor(this.x / this.cs), curR = Math.floor(this.y / this.cs);
+        if (curC === this.target.c && curR === this.target.r) {
+            if (Math.hypot(tx - this.x, ty - this.y) < 15) { this.target = this.path.length > 0 ? this.path.shift() : null; return; }
         }
-        if(Math.hypot(this.x-px,this.y-py)<0.2){
-            this.stuck++; 
-            if(this.stuck>30){
-                this.angle += (Math.random()-0.5)*2; // Jitter
-                if(this.stuck>60){this.target=null; this.path=[]; this.stuck=0;}
+        const a = Math.atan2(ty - this.y, tx - this.x); this.angle += (a - this.angle) * 0.15;
+        const vx = Math.cos(this.angle) * this.speed, vy = Math.sin(this.angle) * this.speed;
+        const px = this.x, py = this.y;
+        if (!maze.isWall(this.x + vx, this.y + vy)) { this.x += vx; this.y += vy; }
+        else { if (!maze.isWall(this.x + vx, this.y)) this.x += vx; else if (!maze.isWall(this.x, this.y + vy)) this.y += vy; }
+        if (Math.hypot(this.x - px, this.y - py) < 0.1) {
+            this.stuck++;
+            if (this.stuck > 30) {
+                this.x += (tx - this.x) * 0.1; this.y += (ty - this.y) * 0.1; // Pull to center
+                if (this.stuck > 60) { this.target = null; this.path = []; this.stuck = 0; }
             }
-        } else this.stuck=0;
+        } else this.stuck = 0;
     }
     pursue(p,maze) {
         if(this.path.length===0 || Math.random()<0.02) {
