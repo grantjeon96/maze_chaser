@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Maze Chaser - 미로 추격자 (Mobile Final)</title>
+    <title>Maze Chaser - 미로 추격자 (Mobile Final v3)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Orbitron:wght@500;900&display=swap" rel="stylesheet">
@@ -76,7 +76,8 @@ h1.glitch { font-family: var(--font-display); font-size: 3rem; font-weight: 900;
 class Maze {
     constructor(cols, rows, cellSize) {
         this.cols = cols; this.rows = rows; this.cellSize = cellSize;
-        this.grid = []; this.items = []; this.initGrid();
+        this.grid = []; this.items = []; this.startCell = {r:0, c:0}; this.exitCell = {r:rows-1, c:cols-1};
+        this.initGrid();
     }
     initGrid() {
         for (let r = 0; r < this.rows; r++) {
@@ -86,15 +87,15 @@ class Maze {
         }
     }
     generate() {
-        let current = this.grid[0][0]; current.visited = true;
-        let stack = [current];
+        let current = this.grid[0][0]; current.visited = true; let stack = [current];
         while (stack.length > 0) {
             let next = this.getNeighbor(current);
-            if (next) {
-                next.visited = true; stack.push(current);
-                this.removeWalls(current, next); current = next;
-            } else { current = stack.pop(); }
+            if (next) { next.visited = true; stack.push(current); this.removeWalls(current, next); current = next; }
+            else { current = stack.pop(); }
         }
+        const qs = Math.floor(this.cols/2);
+        this.startCell = { r: Math.floor(Math.random()*qs), c: Math.floor(Math.random()*qs) };
+        this.exitCell = { r: qs+Math.floor(Math.random()*qs), c: qs+Math.floor(Math.random()*qs) };
         this.spawnItems();
     }
     getNeighbor(cell) {
@@ -126,7 +127,7 @@ class Maze {
         }
         ctx.shadowBlur = 15; ctx.shadowColor = "#ff00ea"; ctx.fillStyle = "#ff00ea";
         this.items.forEach(i => { ctx.beginPath(); ctx.arc((i.c+0.5)*this.cellSize, (i.r+0.5)*this.cellSize, 10, 0, Math.PI*2); ctx.fill(); });
-        const ex = (this.cols-0.5)*this.cellSize, ey = (this.rows-0.5)*this.cellSize;
+        const ex = (this.exitCell.c+0.5)*this.cellSize, ey = (this.exitCell.r+0.5)*this.cellSize;
         ctx.shadowBlur = 30; ctx.shadowColor = "#34c759"; ctx.fillStyle = "#34c759"; ctx.beginPath(); ctx.arc(ex, ey, 35, 0, Math.PI*2); ctx.fill();
         ctx.fillStyle="white"; ctx.font="bold 24px Orbitron"; ctx.textAlign="center"; ctx.fillText("EXIT", ex, ey+8);
         ctx.shadowBlur = 0;
@@ -191,8 +192,18 @@ class Enemy {
         let mx=Math.cos(this.angle)*this.speed, my=Math.sin(this.angle)*this.speed;
         let px=this.x, py=this.y;
         if(!maze.isWall(this.x+mx, this.y+my)){this.x+=mx; this.y+=my;}
-        else { if(!maze.isWall(this.x+mx,this.y))this.x+=mx; else if(!maze.isWall(this.x,this.y+my))this.y+=my; else {this.target=null; this.path=[];} }
-        if(Math.hypot(this.x-px,this.y-py)<0.1){this.stuck++; if(this.stuck>40){this.target=null; this.path=[]; this.stuck=0;}} else this.stuck=0;
+        else { 
+            if(!maze.isWall(this.x+mx,this.y))this.x+=mx; 
+            else if(!maze.isWall(this.x,this.y+my))this.y+=my; 
+            else {this.target=null; this.path=[];} 
+        }
+        if(Math.hypot(this.x-px,this.y-py)<0.2){
+            this.stuck++; 
+            if(this.stuck>30){
+                this.angle += (Math.random()-0.5)*2; // Jitter
+                if(this.stuck>60){this.target=null; this.path=[]; this.stuck=0;}
+            }
+        } else this.stuck=0;
     }
     pursue(p,maze) {
         if(this.path.length===0 || Math.random()<0.02) {
@@ -236,12 +247,11 @@ class Minimap {
         for(let r=0; r<maze.rows; r++) { for(let c=0; c<maze.cols; c++) { let l=maze.grid[r][c], x=c*cw, y=r*ch; if(l.walls[0])this.line(x,y,x+cw,y); if(l.walls[1])this.line(x+cw,y,x+cw,y+ch); if(l.walls[2])this.line(x+cw,y+ch,x,y+ch); if(l.walls[3])this.line(x,y+ch,x,y); } }
         ctx.fillStyle="#00f2ff"; ctx.beginPath(); ctx.arc((p.x/(maze.cols*maze.cellSize))*this.can.width, (p.y/(maze.rows*maze.cellSize))*this.can.height, 3, 0, Math.PI*2); ctx.fill();
         ctx.fillStyle="#ff2d55"; enemies.forEach(e => { ctx.beginPath(); ctx.arc((e.x/(maze.cols*maze.cellSize))*this.can.width, (e.y/(maze.rows*maze.cellSize))*this.can.height, 3, 0, Math.PI*2); ctx.fill(); });
-        ctx.fillStyle="#34c759"; ctx.fillRect(this.can.width-10, this.can.height-10, 8, 8);
+        ctx.fillStyle="#34c759"; ctx.beginPath(); ctx.arc((maze.exitCell.c+0.5)*cw, (maze.exitCell.r+0.5)*ch, 3, 0, Math.PI*2); ctx.fill();
     }
     line(x1,y1,x2,y2){this.ctx.beginPath(); this.ctx.moveTo(x1,y1); this.ctx.lineTo(x2,y2); this.ctx.stroke();}
 }
 
-// --- Game Logic ---
 const canvas = document.getElementById("game-canvas"), ctx = canvas.getContext("2d"), minCan = document.getElementById("minimap-canvas");
 let maze, player, enemies=[], minimap, gameState="MENU", startTime, points=0, level=1;
 const ctrl = { forward: false, reverse: false, left: false, right: false, boost: false };
@@ -249,19 +259,19 @@ const ctrl = { forward: false, reverse: false, left: false, right: false, boost:
 function init() {
     resize(); let ms = 10 + level * 2, cs = 100;
     maze = new Maze(ms, ms, cs); maze.generate();
-    player = new Car(cs / 2, cs / 2);
-    enemies = []; for (let i = 0; i < level; i++) { enemies.push(new Enemy((ms-0.5)*cs, (ms-0.5)*cs, cs)); }
+    player = new Car((maze.startCell.c+0.5)*cs, (maze.startCell.r+0.5)*cs);
+    enemies = []; for (let i = 0; i < level; i++) {
+        let er, ec; do { er = Math.floor(Math.random()*ms); ec = Math.floor(Math.random()*ms); } while(Math.hypot(ec-maze.startCell.c, er-maze.startCell.r) < 5);
+        enemies.push(new Enemy((ec+0.5)*cs, (er+0.5)*cs, cs));
+    }
     minimap = new Minimap(minCan, maze);
-    resize();
 }
-
 function startGame() { gameState="PLAYING"; document.getElementById("overlay").classList.add("hidden"); startTime=Date.now(); }
 function showStore() { document.getElementById("menu-screen").classList.add("hidden"); document.getElementById("store-screen").classList.remove("hidden"); }
 function showMenu() { document.getElementById("store-screen").classList.add("hidden"); document.getElementById("menu-screen").classList.remove("hidden"); }
 function nextLevel() { level++; init(); startGame(); }
 function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; minCan.width = 150; minCan.height = 150; }
-function upgrade(t) { if (points >= 500) { points -= 500; if (t === 'speed') player.maxSpeed += 0.5; if (t === 'boost') player.boostDuration += 500; alert("UPGRADED!"); } }
-
+function upgrade(t) { if (points >= 500) { points -= 500; if (t === 'speed') player.maxSpeed += 0.5; alert("UPGRADED!"); } }
 function initUI() {
     document.getElementById("start-btn").onclick = startGame;
     document.getElementById("store-btn").onclick = showStore;
@@ -269,15 +279,11 @@ function initUI() {
     document.getElementById("retry-btn").onclick = startGame;
     document.getElementById("next-btn").onclick = nextLevel;
     const b = document.getElementById("boost-btn");
-    b.ontouchstart = (e) => { e.preventDefault(); ctrl.boost = true; };
-    b.ontouchend = () => { ctrl.boost = false; };
-    b.onmousedown = () => { ctrl.boost = true; };
-    b.onmouseup = () => { ctrl.boost = false; };
+    b.ontouchstart = (e) => { e.preventDefault(); ctrl.boost = true; }; b.ontouchend = () => { ctrl.boost = false; };
+    b.onmousedown = () => { ctrl.boost = true; }; b.onmouseup = () => { ctrl.boost = false; };
     document.getElementById("upgrade-speed").onclick = () => upgrade('speed');
-    document.getElementById("upgrade-boost").onclick = () => upgrade('boost');
     document.getElementById("buy-hypercar").onclick = () => { if(confirm("Buy Hyper Car?")){player.color="gold"; player.maxSpeed=6; player.acceleration=0.5; player.energy=100;} };
 }
-
 function initJoystick() {
     const w = document.getElementById("joystick-wrapper"), b = document.getElementById("joystick-base"), s = document.getElementById("joystick-stick");
     if (!("ontouchstart" in window)) return; w.style.display = "block"; document.getElementById("boost-btn").classList.remove("hidden");
@@ -290,20 +296,17 @@ function initJoystick() {
     });
     window.addEventListener("touchend", () => { a = false; s.style.transform = "translate(0, 0)"; ctrl.forward = ctrl.reverse = ctrl.left = ctrl.right = false; });
 }
-
 function update() {
     player.update(ctrl, maze); enemies.forEach(e => e.update(player, maze));
     maze.items = maze.items.filter(i => { if (Math.hypot(player.x - (i.c+0.5)*100, player.y - (i.r+0.5)*100) < 30) { player.energy = Math.min(player.energy + 25, player.maxEnergy); points += 50; return false; } return true; });
-    for (let e of enemies) if (Math.hypot(player.x - e.x, player.y - e.y) < 20) { endGame("CAPTURED"); return; }
-    if (Math.hypot(player.x - ((maze.cols-0.5)*100), player.y - ((maze.rows-0.5)*100)) < 50) { points += 1000; endGame("ESCAPED"); }
+    for (let e of enemies) if (Math.hypot(player.x - e.x, player.y - e.y) < 25) { endGame("CAPTURED"); return; }
+    if (Math.hypot(player.x - (maze.exitCell.c+0.5)*100, player.y - (maze.exitCell.r+0.5)*100) < 50) { points += 1000; endGame("ESCAPED"); }
     if ((Date.now() - startTime) / 1000 > 300) endGame("CAPTURED");
 }
-
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.save(); ctx.translate(canvas.width/2 - player.x, canvas.height/2 - player.y);
     maze.draw(ctx); player.draw(ctx); enemies.forEach(e => e.draw(ctx)); ctx.restore(); minimap.draw(player, enemies);
 }
-
 function updateHUD() {
     const el = Math.floor((Date.now() - startTime) / 1000), rem = Math.max(0, 300 - el);
     const m = String(Math.floor(rem/60)).padStart(2,'0'), s = String(rem%60).padStart(2,'0');
@@ -312,13 +315,11 @@ function updateHUD() {
     document.getElementById("points-display").innerText = `POINTS: ${points}`;
     document.getElementById("energy-bar-fill").style.width = `${(player.energy / player.maxEnergy) * 100}%`;
 }
-
 function endGame(r) {
     gameState = "ENDED"; document.getElementById("overlay").classList.remove("hidden");
     if (r === "CAPTURED") { document.getElementById("game-over-screen").classList.remove("hidden"); document.getElementById("menu-screen").classList.add("hidden"); }
     else { document.getElementById("victory-screen").classList.remove("hidden"); document.getElementById("menu-screen").classList.add("hidden"); }
 }
-
 window.onresize = resize;
 window.addEventListener("keydown", (e) => {
     switch(e.key) { case "ArrowUp": case "w": ctrl.forward = true; break; case "ArrowDown": case "s": ctrl.reverse = true; break; case "ArrowLeft": case "a": ctrl.left = true; break; case "ArrowRight": case "d": ctrl.right = true; break; case " ": ctrl.boost = true; break; }
@@ -326,10 +327,7 @@ window.addEventListener("keydown", (e) => {
 window.addEventListener("keyup", (e) => {
     switch(e.key) { case "ArrowUp": case "w": ctrl.forward = false; break; case "ArrowDown": case "s": ctrl.reverse = false; break; case "ArrowLeft": case "a": ctrl.left = false; break; case "ArrowRight": case "d": ctrl.right = false; break; case " ": ctrl.boost = false; break; }
 });
-
 function gameLoop() { if (gameState === "PLAYING") { update(); draw(); updateHUD(); } requestAnimationFrame(gameLoop); }
-
-// Start everything
 init(); initUI(); initJoystick(); requestAnimationFrame(gameLoop);
     </script>
 </body>

@@ -6,6 +6,8 @@ class Maze {
         this.grid = [];
         this.stack = [];
         this.items = [];
+        this.startCell = { r: 0, c: 0 };
+        this.exitCell = { r: rows - 1, c: cols - 1 };
         this.initGrid();
     }
 
@@ -39,6 +41,14 @@ class Maze {
                 current = this.stack.pop();
             }
         }
+        
+        // Randomize Start and Exit (ensure they are in different quadrants)
+        const quadSize = Math.floor(this.cols / 2);
+        this.startCell = { r: Math.floor(Math.random() * quadSize), c: Math.floor(Math.random() * quadSize) };
+        this.exitCell = { 
+            r: quadSize + Math.floor(Math.random() * quadSize), 
+            c: quadSize + Math.floor(Math.random() * quadSize) 
+        };
         
         this.spawnItems();
     }

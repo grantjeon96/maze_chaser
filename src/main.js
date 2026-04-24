@@ -198,12 +198,13 @@ function gameLoop() {
 
 function update() {
     player.update(controls, maze);
-    enemies.forEach(enemy => enemy.update(player, maze));
+    enemies.forEach(e => e.update(player, maze));
 
-    // Item collection
+    // Item Collection
     maze.items = maze.items.filter(item => {
-        const dist = Math.hypot(player.x - (item.c + 0.5) * maze.cellSize, player.y - (item.r + 0.5) * maze.cellSize);
-        if (dist < 30) {
+        const itemX = (item.c + 0.5) * maze.cellSize;
+        const itemY = (item.r + 0.5) * maze.cellSize;
+        if (Math.hypot(player.x - itemX, player.y - itemY) < 30) {
             player.energy = Math.min(player.energy + 25, player.maxEnergy);
             points += 50;
             return false;
@@ -211,27 +212,24 @@ function update() {
         return true;
     });
 
-    // Collision check with all enemies
-    for (let enemy of enemies) {
-        const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
-        if (dist < 20) {
+    // Enemy Collision
+    for (let e of enemies) {
+        if (Math.hypot(player.x - e.x, player.y - e.y) < 25) {
             endGame("CAPTURED");
             return;
         }
     }
 
-    // Win condition
-    const exitX = (maze.cols - 0.5) * maze.cellSize;
-    const exitY = (maze.rows - 0.5) * maze.cellSize;
+    // Randomized Exit Check
+    const exitX = (maze.exitCell.c + 0.5) * maze.cellSize;
+    const exitY = (maze.exitCell.r + 0.5) * maze.cellSize;
     if (Math.hypot(player.x - exitX, player.y - exitY) < 50) {
         points += 1000;
         endGame("ESCAPED");
     }
-    
-    // Time limit check: 5 Minutes (300 seconds)
-    const timeLimit = 300;
-    const elapsed = (Date.now() - startTime) / 1000;
-    if (elapsed > timeLimit) {
+
+    // Time Limit
+    if ((Date.now() - startTime) / 1000 > 300) {
         endGame("CAPTURED");
     }
 }
