@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Maze Chaser - 미로 추격자 (Mobile Final)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Orbitron:wght@500;900&display=swap" rel="stylesheet">
+    <style>
+:root { --bg-color: #050505; --primary-color: #00f2ff; --secondary-color: #ff00ea; --danger-color: #ff2d55; --victory-color: #34c759; --glass-bg: rgba(255, 255, 255, 0.05); --glass-border: rgba(255, 255, 255, 0.1); --font-main: 'Inter', sans-serif; --font-display: 'Orbitron', sans-serif; }
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+body, html { width: 100%; height: 100%; background-color: var(--bg-color); color: white; font-family: var(--font-main); overflow: hidden; position: fixed; }
+#game-container { position: relative; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; }
+#game-canvas { width: 100%; height: 100%; background: radial-gradient(circle, #111 0%, #000 100%); }
+#hud { position: absolute; top: 20px; left: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 10; }
+.hud-item { background: var(--glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid var(--glass-border); padding: 8px 15px; border-radius: 8px; font-family: var(--font-display); font-size: 0.8rem; letter-spacing: 1px; color: var(--primary-color); text-shadow: 0 0 10px rgba(0, 242, 255, 0.5); }
+#minimap-container { position: absolute; top: 20px; right: 20px; width: 150px; height: 150px; background: var(--glass-bg); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); border: 2px solid var(--glass-border); border-radius: 12px; overflow: hidden; z-index: 10; }
+#minimap-canvas { width: 100%; height: 100%; }
+#joystick-wrapper { position: absolute; bottom: 50px; left: 50px; width: 120px; height: 120px; z-index: 10; display: none; }
+#joystick-base { width: 100%; height: 100%; background: rgba(255, 255, 255, 0.1); border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 50%; position: relative; display: flex; justify-content: center; align-items: center; }
+#joystick-stick { width: 50px; height: 50px; background: var(--primary-color); border-radius: 50%; box-shadow: 0 0 20px var(--primary-color); position: absolute; }
+#overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 100; display: flex; justify-content: center; align-items: center; transition: opacity 0.5s ease; }
+.screen { text-align: center; display: flex; flex-direction: column; gap: 20px; padding: 40px; border-radius: 20px; background: var(--glass-bg); border: 1px solid var(--glass-border); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+h1.glitch { font-family: var(--font-display); font-size: 3rem; font-weight: 900; color: var(--primary-color); text-shadow: 0 0 15px var(--primary-color); position: relative; }
+.premium-btn { padding: 12px 30px; background: transparent; border: 2px solid var(--primary-color); color: var(--primary-color); font-family: var(--font-display); font-size: 1rem; border-radius: 50px; cursor: pointer; transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 2px; }
+.premium-btn:hover { background: var(--primary-color); color: black; box-shadow: 0 0 30px var(--primary-color); }
+.danger-text { color: var(--danger-color); font-family: var(--font-display); font-size: 2.5rem; }
+.victory-text { color: var(--victory-color); font-family: var(--font-display); font-size: 2.5rem; }
+.hidden { display: none !important; }
+#energy-container { display: flex; align-items: center; gap: 10px; }
+#energy-bar-bg { width: 100px; height: 10px; background: rgba(255, 255, 255, 0.1); border-radius: 5px; overflow: hidden; }
+#energy-bar-fill { width: 0%; height: 100%; background: linear-gradient(90deg, var(--secondary-color), var(--primary-color)); box-shadow: 0 0 10px var(--primary-color); transition: width 0.3s ease; }
+.store-grid { display: grid; grid-template-columns: 1fr; gap: 15px; margin: 20px 0; }
+.store-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.03); padding: 15px; border-radius: 12px; border: 1px solid var(--glass-border); }
+.store-item.premium { border-color: gold; background: rgba(255, 215, 0, 0.05); }
+.upgrade-btn { padding: 8px 15px; background: var(--primary-color); color: black; border: none; border-radius: 5px; font-family: var(--font-display); font-size: 0.7rem; cursor: pointer; }
+#boost-btn { position: absolute; bottom: 50px; right: 50px; width: 100px; height: 100px; border-radius: 50%; z-index: 10; font-size: 0.9rem; border-width: 4px; background: rgba(255, 0, 234, 0.1); color: var(--secondary-color); border-color: var(--secondary-color); }
+@media (max-width: 600px) { #hud { top: 10px; left: 10px; } #minimap-container { top: 10px; right: 10px; width: 100px; height: 100px; } h1.glitch { font-size: 2rem; } #energy-bar-bg { width: 60px; } }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        <div id="hud">
+            <div class="hud-item" id="timer-display">TIME: 05:00</div>
+            <div class="hud-item" id="speed-display">SPEED: 0 km/h</div>
+            <div class="hud-item" id="points-display">POINTS: 0</div>
+            <div class="hud-item" id="energy-container"><span>ENERGY</span><div id="energy-bar-bg"><div id="energy-bar-fill"></div></div></div>
+            <div class="hud-item" id="status-display">STATUS: PATROL</div>
+        </div>
+        <div id="minimap-container"><canvas id="minimap-canvas"></canvas></div>
+        <div id="joystick-wrapper"><div id="joystick-base"><div id="joystick-stick"></div></div></div>
+        <button id="boost-btn" class="premium-btn hidden">BOOST</button>
+        <div id="overlay">
+            <div id="menu-screen" class="screen">
+                <h1 class="glitch" data-text="MAZE CHASER">MAZE CHASER</h1>
+                <p>추격자를 피해 탈출구(EXIT)를 찾으세요!</p>
+                <div class="menu-buttons"><button id="start-btn" class="premium-btn">게임 시작</button><button id="store-btn" class="premium-btn">상점</button></div>
+            </div>
+            <div id="store-screen" class="screen hidden">
+                <h2>GARAGE</h2>
+                <div class="store-grid">
+                    <div class="store-item"><span>ENGINE (SPEED)</span><button id="upgrade-speed" class="upgrade-btn">UPGRADE (500 pts)</button></div>
+                    <div class="store-item"><span>BATTERY (BOOST)</span><button id="upgrade-boost" class="upgrade-btn">UPGRADE (500 pts)</button></div>
+                    <div class="store-item premium"><span>HYPER CAR</span><button id="buy-hypercar" class="upgrade-btn">BUY ($4.99)</button></div>
+                </div>
+                <button id="back-to-menu" class="premium-btn">뒤로 가기</button>
+            </div>
+            <div id="game-over-screen" class="screen hidden"><h2 class="danger-text">CAPTURED</h2><p>탈출에 실패했습니다!</p><button id="retry-btn" class="premium-btn">다시 시도</button></div>
+            <div id="victory-screen" class="screen hidden"><h2 class="victory-text">ESCAPED</h2><p id="reward-text">보상: 1000 POINTS</p><button id="next-btn" class="premium-btn">다음 레벨</button></div>
+        </div>
+    </div>
+    <script>
+// --- Core Classes ---
+class Maze {
+    constructor(cols, rows, cellSize) {
+        this.cols = cols; this.rows = rows; this.cellSize = cellSize;
+        this.grid = []; this.items = []; this.initGrid();
+    }
+    initGrid() {
+        for (let r = 0; r < this.rows; r++) {
+            let row = [];
+            for (let c = 0; c < this.cols; c++) { row.push({ r, c, walls: [true, true, true, true], visited: false }); }
+            this.grid.push(row);
+        }
+    }
+    generate() {
+        let current = this.grid[0][0]; current.visited = true;
+        let stack = [current];
+        while (stack.length > 0) {
+            let next = this.getNeighbor(current);
+            if (next) {
+                next.visited = true; stack.push(current);
+                this.removeWalls(current, next); current = next;
+            } else { current = stack.pop(); }
+        }
+        this.spawnItems();
+    }
+    getNeighbor(cell) {
+        let n = []; let {r,c} = cell;
+        if(r>0 && !this.grid[r-1][c].visited) n.push(this.grid[r-1][c]);
+        if(c<this.cols-1 && !this.grid[r][c+1].visited) n.push(this.grid[r][c+1]);
+        if(r<this.rows-1 && !this.grid[r+1][c].visited) n.push(this.grid[r+1][c]);
+        if(c>0 && !this.grid[r][c-1].visited) n.push(this.grid[r][c-1]);
+        return n.length > 0 ? n[Math.floor(Math.random()*n.length)] : null;
+    }
+    removeWalls(a,b) {
+        let dx = a.c - b.c; if(dx===1){a.walls[3]=false; b.walls[1]=false;} else if(dx===-1){a.walls[1]=false; b.walls[3]=false;}
+        let dy = a.r - b.r; if(dy===1){a.walls[0]=false; b.walls[2]=false;} else if(dy===-1){a.walls[2]=false; b.walls[0]=false;}
+    }
+    spawnItems() {
+        this.items = []; const count = Math.floor(this.cols*this.rows*0.2);
+        for(let i=0; i<count; i++) this.items.push({r:Math.floor(Math.random()*this.rows), c:Math.floor(Math.random()*this.cols)});
+    }
+    draw(ctx) {
+        ctx.strokeStyle = "rgba(0, 242, 255, 0.3)"; ctx.lineWidth = 2;
+        for(let r=0; r<this.rows; r++) {
+            for(let c=0; c<this.cols; c++) {
+                let cell = this.grid[r][c]; let x = c*this.cellSize; let y = r*this.cellSize;
+                if(cell.walls[0]) this.line(ctx,x,y,x+this.cellSize,y);
+                if(cell.walls[1]) this.line(ctx,x+this.cellSize,y,x+this.cellSize,y+this.cellSize);
+                if(cell.walls[2]) this.line(ctx,x+this.cellSize,y+this.cellSize,x,y+this.cellSize);
+                if(cell.walls[3]) this.line(ctx,x,y+this.cellSize,x,y);
+            }
+        }
+        ctx.shadowBlur = 15; ctx.shadowColor = "#ff00ea"; ctx.fillStyle = "#ff00ea";
+        this.items.forEach(i => { ctx.beginPath(); ctx.arc((i.c+0.5)*this.cellSize, (i.r+0.5)*this.cellSize, 10, 0, Math.PI*2); ctx.fill(); });
+        const ex = (this.cols-0.5)*this.cellSize, ey = (this.rows-0.5)*this.cellSize;
+        ctx.shadowBlur = 30; ctx.shadowColor = "#34c759"; ctx.fillStyle = "#34c759"; ctx.beginPath(); ctx.arc(ex, ey, 35, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle="white"; ctx.font="bold 24px Orbitron"; ctx.textAlign="center"; ctx.fillText("EXIT", ex, ey+8);
+        ctx.shadowBlur = 0;
+    }
+    line(ctx,x1,y1,x2,y2){ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();}
+    isWall(x,y) {
+        let c = Math.floor(x/this.cellSize), r = Math.floor(y/this.cellSize); if(r<0||r>=this.rows||c<0||c>=this.cols) return true;
+        let cell = this.grid[r][c], rx=x%this.cellSize, ry=y%this.cellSize, b=10;
+        if(cell.walls[0]&&ry<b) return true; if(cell.walls[1]&&rx>this.cellSize-b) return true;
+        if(cell.walls[2]&&ry>this.cellSize-b) return true; if(cell.walls[3]&&rx<b) return true;
+        return false;
+    }
+}
+
+class Car {
+    constructor(x,y,color="#00f2ff") {
+        this.x=x; this.y=y; this.angle=0; this.vx=0; this.vy=0;
+        this.acceleration=0.3; this.friction=0.9; this.maxSpeed=4;
+        this.width=25; this.height=25; this.color=color;
+        this.energy=50; this.maxEnergy=100; this.isBoosting=false; this.boostTimer=0;
+    }
+    update(ctrl, maze) {
+        let cm = this.maxSpeed, ca = this.acceleration;
+        if(this.energy <= 0) { cm *= 0.6; ca *= 0.6; }
+        if(ctrl.boost && this.energy > 0 && !this.isBoosting) { this.isBoosting=true; this.boostTimer=Date.now(); }
+        if(this.isBoosting) {
+            if(Date.now()-this.boostTimer < 2000 && this.energy > 0) { cm*=1.8; ca*=2; this.energy-=0.6; }
+            else this.isBoosting=false;
+        }
+        let ix=0, iy=0; if(ctrl.forward) iy-=1; if(ctrl.reverse) iy+=1; if(ctrl.left) ix-=1; if(ctrl.right) ix+=1;
+        if(ix!==0 || iy!==0) { let m=Math.hypot(ix,iy); this.vx+=(ix/m)*ca; this.vy+=(iy/m)*ca; this.angle=Math.atan2(this.vy,this.vx); }
+        this.vx*=this.friction; this.vy*=this.friction;
+        let s=Math.hypot(this.vx,this.vy); if(s>cm){this.vx=(this.vx/s)*cm; this.vy=(this.vy/s)*cm;}
+        if(!maze.isWall(this.x+this.vx, this.y)) this.x+=this.vx; else this.vx*=-0.3;
+        if(!maze.isWall(this.x, this.y+this.vy)) this.y+=this.vy; else this.vy*=-0.3;
+    }
+    draw(ctx) {
+        ctx.save(); ctx.translate(this.x,this.y); ctx.rotate(this.angle);
+        ctx.shadowBlur=15; ctx.shadowColor=this.color; ctx.fillStyle=this.color;
+        ctx.beginPath(); ctx.moveTo(this.width/2,0); ctx.lineTo(-this.width/2,-this.height/2); ctx.lineTo(-this.width/4,0); ctx.lineTo(-this.width/2,this.height/2); ctx.closePath(); ctx.fill();
+        ctx.restore();
+    }
+}
+
+class Enemy {
+    constructor(x,y,cs,color="#ff2d55") {
+        this.x=x; this.y=y; this.angle=0; this.speed=1.2; this.state="PATROL";
+        this.color=color; this.width=25; this.height=15; this.target=null; this.cs=cs; this.path=[]; this.stuck=0;
+    }
+    update(p, maze) {
+        const dist = Math.hypot(p.x-this.x, p.y-this.y);
+        if(dist < 250) this.state="PURSUIT"; else if(dist > 400) this.state="PATROL";
+        if(this.state==="PURSUIT") this.pursue(p,maze); else this.patrol(maze);
+        this.move(maze);
+    }
+    move(maze) {
+        if(!this.target) return;
+        let tx=(this.target.c+0.5)*this.cs, ty=(this.target.r+0.5)*this.cs;
+        let dx=tx-this.x, dy=ty-this.y, d=Math.hypot(dx,dy);
+        if(d<10){this.target=this.path.length>0?this.path.shift():null; return;}
+        let a=Math.atan2(dy,dx); this.angle+=(a-this.angle)*0.1;
+        let mx=Math.cos(this.angle)*this.speed, my=Math.sin(this.angle)*this.speed;
+        let px=this.x, py=this.y;
+        if(!maze.isWall(this.x+mx, this.y+my)){this.x+=mx; this.y+=my;}
+        else { if(!maze.isWall(this.x+mx,this.y))this.x+=mx; else if(!maze.isWall(this.x,this.y+my))this.y+=my; else {this.target=null; this.path=[];} }
+        if(Math.hypot(this.x-px,this.y-py)<0.1){this.stuck++; if(this.stuck>40){this.target=null; this.path=[]; this.stuck=0;}} else this.stuck=0;
+    }
+    pursue(p,maze) {
+        if(this.path.length===0 || Math.random()<0.02) {
+            let s={c:Math.floor(this.x/this.cs), r:Math.floor(this.y/this.cs)};
+            let e={c:Math.floor(p.x/this.cs), r:Math.floor(p.y/this.cs)};
+            this.path=this.bfs(s,e,maze); this.target=this.path.shift();
+        }
+    }
+    patrol(maze) {
+        if(!this.target) {
+            let s={c:Math.floor(this.x/this.cs), r:Math.floor(this.y/this.cs)};
+            let rr=Math.floor(Math.random()*maze.rows), rc=Math.floor(Math.random()*maze.cols);
+            this.path=this.bfs(s,{r:rr,c:rc},maze); this.target=this.path.shift();
+        }
+    }
+    bfs(s,e,maze) {
+        let q=[[s]], v=new Set(); v.add(`${s.c},${s.r}`);
+        while(q.length>0) {
+            let p=q.shift(), cur=p[p.length-1]; if(cur.c===e.c && cur.r===e.r) return p;
+            let ns=this.getN(cur,maze); for(let n of ns){if(!v.has(`${n.c},${n.r}`)){v.add(`${n.c},${n.r}`); q.push([...p,n]);}}
+        }
+        return [];
+    }
+    getN(cell,maze) {
+        let n=[], {r,c}=cell; let g=maze.grid[r][c];
+        if(!g.walls[0]&&r>0)n.push({r:r-1,c:c}); if(!g.walls[1]&&c<maze.cols-1)n.push({r:r,c:c+1});
+        if(!g.walls[2]&&r<maze.rows-1)n.push({r:r+1,c:c}); if(!g.walls[3]&&c>0)n.push({r:r,c:c-1});
+        return n;
+    }
+    draw(ctx){
+        ctx.save(); ctx.translate(this.x,this.y); ctx.rotate(this.angle); ctx.shadowBlur=15; ctx.shadowColor=this.color; ctx.fillStyle=this.color;
+        ctx.fillRect(-this.width/2,-this.height/2,this.width,this.height); ctx.restore();
+    }
+}
+
+class Minimap {
+    constructor(can, maze) { this.can=can; this.ctx=can.getContext("2d"); this.maze=maze; }
+    draw(p, enemies) {
+        let ctx=this.ctx, maze=this.maze; ctx.clearRect(0,0,this.can.width,this.can.height);
+        let cw=this.can.width/maze.cols, ch=this.can.height/maze.rows; ctx.strokeStyle="rgba(0,242,255,0.2)";
+        for(let r=0; r<maze.rows; r++) { for(let c=0; c<maze.cols; c++) { let l=maze.grid[r][c], x=c*cw, y=r*ch; if(l.walls[0])this.line(x,y,x+cw,y); if(l.walls[1])this.line(x+cw,y,x+cw,y+ch); if(l.walls[2])this.line(x+cw,y+ch,x,y+ch); if(l.walls[3])this.line(x,y+ch,x,y); } }
+        ctx.fillStyle="#00f2ff"; ctx.beginPath(); ctx.arc((p.x/(maze.cols*maze.cellSize))*this.can.width, (p.y/(maze.rows*maze.cellSize))*this.can.height, 3, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle="#ff2d55"; enemies.forEach(e => { ctx.beginPath(); ctx.arc((e.x/(maze.cols*maze.cellSize))*this.can.width, (e.y/(maze.rows*maze.cellSize))*this.can.height, 3, 0, Math.PI*2); ctx.fill(); });
+        ctx.fillStyle="#34c759"; ctx.fillRect(this.can.width-10, this.can.height-10, 8, 8);
+    }
+    line(x1,y1,x2,y2){this.ctx.beginPath(); this.ctx.moveTo(x1,y1); this.ctx.lineTo(x2,y2); this.ctx.stroke();}
+}
+
+// --- Game Logic ---
+const canvas = document.getElementById("game-canvas"), ctx = canvas.getContext("2d"), minCan = document.getElementById("minimap-canvas");
+let maze, player, enemies=[], minimap, gameState="MENU", startTime, points=0, level=1;
+const ctrl = { forward: false, reverse: false, left: false, right: false, boost: false };
+
+function init() {
+    resize(); let ms = 10 + level * 2, cs = 100;
+    maze = new Maze(ms, ms, cs); maze.generate();
+    player = new Car(cs / 2, cs / 2);
+    enemies = []; for (let i = 0; i < level; i++) { enemies.push(new Enemy((ms-0.5)*cs, (ms-0.5)*cs, cs)); }
+    minimap = new Minimap(minCan, maze);
+    resize();
+}
+
+function startGame() { gameState="PLAYING"; document.getElementById("overlay").classList.add("hidden"); startTime=Date.now(); }
+function showStore() { document.getElementById("menu-screen").classList.add("hidden"); document.getElementById("store-screen").classList.remove("hidden"); }
+function showMenu() { document.getElementById("store-screen").classList.add("hidden"); document.getElementById("menu-screen").classList.remove("hidden"); }
+function nextLevel() { level++; init(); startGame(); }
+function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; minCan.width = 150; minCan.height = 150; }
+function upgrade(t) { if (points >= 500) { points -= 500; if (t === 'speed') player.maxSpeed += 0.5; if (t === 'boost') player.boostDuration += 500; alert("UPGRADED!"); } }
+
+function initUI() {
+    document.getElementById("start-btn").onclick = startGame;
+    document.getElementById("store-btn").onclick = showStore;
+    document.getElementById("back-to-menu").onclick = showMenu;
+    document.getElementById("retry-btn").onclick = startGame;
+    document.getElementById("next-btn").onclick = nextLevel;
+    const b = document.getElementById("boost-btn");
+    b.ontouchstart = (e) => { e.preventDefault(); ctrl.boost = true; };
+    b.ontouchend = () => { ctrl.boost = false; };
+    b.onmousedown = () => { ctrl.boost = true; };
+    b.onmouseup = () => { ctrl.boost = false; };
+    document.getElementById("upgrade-speed").onclick = () => upgrade('speed');
+    document.getElementById("upgrade-boost").onclick = () => upgrade('boost');
+    document.getElementById("buy-hypercar").onclick = () => { if(confirm("Buy Hyper Car?")){player.color="gold"; player.maxSpeed=6; player.acceleration=0.5; player.energy=100;} };
+}
+
+function initJoystick() {
+    const w = document.getElementById("joystick-wrapper"), b = document.getElementById("joystick-base"), s = document.getElementById("joystick-stick");
+    if (!("ontouchstart" in window)) return; w.style.display = "block"; document.getElementById("boost-btn").classList.remove("hidden");
+    let a = false, sp = { x: 0, y: 0 };
+    b.addEventListener("touchstart", (e) => { a = true; sp = { x: e.touches[0].clientX, y: e.touches[0].clientY }; });
+    window.addEventListener("touchmove", (e) => {
+        if (!a) return; const dx = e.touches[0].clientX - sp.x, dy = e.touches[0].clientY - sp.y, d = Math.min(Math.hypot(dx, dy), 50), an = Math.atan2(dy, dx);
+        const x = Math.cos(an) * d, y = Math.sin(an) * d; s.style.transform = `translate(${x}px, ${y}px)`;
+        ctrl.forward = y < -10; ctrl.reverse = y > 10; ctrl.left = x < -10; ctrl.right = x > 10;
+    });
+    window.addEventListener("touchend", () => { a = false; s.style.transform = "translate(0, 0)"; ctrl.forward = ctrl.reverse = ctrl.left = ctrl.right = false; });
+}
+
+function update() {
+    player.update(ctrl, maze); enemies.forEach(e => e.update(player, maze));
+    maze.items = maze.items.filter(i => { if (Math.hypot(player.x - (i.c+0.5)*100, player.y - (i.r+0.5)*100) < 30) { player.energy = Math.min(player.energy + 25, player.maxEnergy); points += 50; return false; } return true; });
+    for (let e of enemies) if (Math.hypot(player.x - e.x, player.y - e.y) < 20) { endGame("CAPTURED"); return; }
+    if (Math.hypot(player.x - ((maze.cols-0.5)*100), player.y - ((maze.rows-0.5)*100)) < 50) { points += 1000; endGame("ESCAPED"); }
+    if ((Date.now() - startTime) / 1000 > 300) endGame("CAPTURED");
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.save(); ctx.translate(canvas.width/2 - player.x, canvas.height/2 - player.y);
+    maze.draw(ctx); player.draw(ctx); enemies.forEach(e => e.draw(ctx)); ctx.restore(); minimap.draw(player, enemies);
+}
+
+function updateHUD() {
+    const el = Math.floor((Date.now() - startTime) / 1000), rem = Math.max(0, 300 - el);
+    const m = String(Math.floor(rem/60)).padStart(2,'0'), s = String(rem%60).padStart(2,'0');
+    document.getElementById("timer-display").innerText = `TIME: ${m}:${s}`;
+    document.getElementById("speed-display").innerText = `SPEED: ${Math.floor(Math.abs(Math.hypot(player.vx, player.vy)) * 20)} km/h`;
+    document.getElementById("points-display").innerText = `POINTS: ${points}`;
+    document.getElementById("energy-bar-fill").style.width = `${(player.energy / player.maxEnergy) * 100}%`;
+}
+
+function endGame(r) {
+    gameState = "ENDED"; document.getElementById("overlay").classList.remove("hidden");
+    if (r === "CAPTURED") { document.getElementById("game-over-screen").classList.remove("hidden"); document.getElementById("menu-screen").classList.add("hidden"); }
+    else { document.getElementById("victory-screen").classList.remove("hidden"); document.getElementById("menu-screen").classList.add("hidden"); }
+}
+
+window.onresize = resize;
+window.addEventListener("keydown", (e) => {
+    switch(e.key) { case "ArrowUp": case "w": ctrl.forward = true; break; case "ArrowDown": case "s": ctrl.reverse = true; break; case "ArrowLeft": case "a": ctrl.left = true; break; case "ArrowRight": case "d": ctrl.right = true; break; case " ": ctrl.boost = true; break; }
+});
+window.addEventListener("keyup", (e) => {
+    switch(e.key) { case "ArrowUp": case "w": ctrl.forward = false; break; case "ArrowDown": case "s": ctrl.reverse = false; break; case "ArrowLeft": case "a": ctrl.left = false; break; case "ArrowRight": case "d": ctrl.right = false; break; case " ": ctrl.boost = false; break; }
+});
+
+function gameLoop() { if (gameState === "PLAYING") { update(); draw(); updateHUD(); } requestAnimationFrame(gameLoop); }
+
+// Start everything
+init(); initUI(); initJoystick(); requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>

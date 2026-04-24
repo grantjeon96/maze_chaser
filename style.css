@@ -1,0 +1,278 @@
+:root {
+    --bg-color: #050505;
+    --primary-color: #00f2ff;
+    --secondary-color: #ff00ea;
+    --danger-color: #ff2d55;
+    --victory-color: #34c759;
+    --glass-bg: rgba(255, 255, 255, 0.05);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --font-main: 'Inter', sans-serif;
+    --font-display: 'Orbitron', sans-serif;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
+body, html {
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-color);
+    color: white;
+    font-family: var(--font-main);
+    overflow: hidden;
+    position: fixed; /* Prevent bounce scrolling on iOS */
+}
+
+#game-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#game-canvas {
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, #111 0%, #000 100%);
+}
+
+/* HUD */
+#hud {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 10;
+}
+
+.hud-item {
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    padding: 8px 15px;
+    border-radius: 8px;
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+    color: var(--primary-color);
+    text-shadow: 0 0 10px rgba(0, 242, 255, 0.5);
+}
+
+/* Minimap */
+#minimap-container {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 150px;
+    height: 150px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border: 2px solid var(--glass-border);
+    border-radius: 12px;
+    overflow: hidden;
+    z-index: 10;
+}
+
+#minimap-canvas {
+    width: 100%;
+    height: 100%;
+}
+
+/* Virtual Joystick */
+#joystick-wrapper {
+    position: absolute;
+    bottom: 50px;
+    left: 50px;
+    width: 120px;
+    height: 120px;
+    z-index: 10;
+    display: none; /* Show only on touch devices via JS */
+}
+
+#joystick-base {
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#joystick-stick {
+    width: 50px;
+    height: 50px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    box-shadow: 0 0 20px var(--primary-color);
+    position: absolute;
+}
+
+/* Overlays */
+#overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.5s ease;
+}
+
+.screen {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 40px;
+    border-radius: 20px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+h1.glitch {
+    font-family: var(--font-display);
+    font-size: 3rem;
+    font-weight: 900;
+    color: var(--primary-color);
+    text-shadow: 0 0 15px var(--primary-color);
+    position: relative;
+}
+
+.premium-btn {
+    padding: 12px 30px;
+    background: transparent;
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
+    font-family: var(--font-display);
+    font-size: 1rem;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.premium-btn:hover {
+    background: var(--primary-color);
+    color: black;
+    box-shadow: 0 0 30px var(--primary-color);
+}
+
+.danger-text { color: var(--danger-color); font-family: var(--font-display); font-size: 2.5rem; }
+.victory-text { color: var(--victory-color); font-family: var(--font-display); font-size: 2.5rem; }
+
+.hidden { display: none !important; opacity: 0; pointer-events: none; }
+
+#energy-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#energy-bar-bg {
+    width: 100px;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+#energy-bar-fill {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, var(--secondary-color), var(--primary-color));
+    box-shadow: 0 0 10px var(--primary-color);
+    transition: width 0.3s ease;
+}
+
+/* Store Styles */
+.store-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.store-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+}
+
+.store-item.premium {
+    border-color: gold;
+    background: rgba(255, 215, 0, 0.05);
+}
+
+.upgrade-btn {
+    padding: 8px 15px;
+    background: var(--primary-color);
+    color: black;
+    border: none;
+    border-radius: 5px;
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.upgrade-btn:hover { transform: scale(1.05); }
+.upgrade-btn.gold { background: gold; font-weight: bold; }
+
+#boost-btn {
+    position: absolute;
+    bottom: 50px;
+    right: 50px;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    z-index: 10;
+    font-size: 0.9rem;
+    border-width: 4px;
+    background: rgba(255, 0, 234, 0.1);
+    color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+
+#boost-btn:active {
+    background: var(--secondary-color);
+    color: white;
+}
+
+.menu-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+@media (max-width: 600px) {
+    #hud { top: 10px; left: 10px; }
+    #minimap-container { top: 10px; right: 10px; width: 100px; height: 100px; }
+    h1.glitch { font-size: 2rem; }
+    #energy-bar-bg { width: 60px; }
+    .store-item { flex-direction: column; gap: 10px; }
+}

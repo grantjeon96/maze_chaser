@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Maze Chaser - 미로 추격자</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Orbitron:wght@500;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        
+        <!-- HUD -->
+        <div id="hud">
+            <div class="hud-item" id="timer-display">TIME: 00:00</div>
+            <div class="hud-item" id="speed-display">SPEED: 0 km/h</div>
+            <div class="hud-item" id="points-display">POINTS: 0</div>
+            <div class="hud-item" id="energy-container">
+                <span>ENERGY</span>
+                <div id="energy-bar-bg">
+                    <div id="energy-bar-fill"></div>
+                </div>
+            </div>
+            <div class="hud-item" id="status-display">STATUS: PATROLLING</div>
+        </div>
+
+        <!-- Minimap -->
+        <div id="minimap-container">
+            <canvas id="minimap-canvas"></canvas>
+        </div>
+
+        <!-- Virtual Joystick (Mobile) -->
+        <div id="joystick-wrapper">
+            <div id="joystick-base">
+                <div id="joystick-stick"></div>
+            </div>
+        </div>
+
+        <!-- Boost Button (Mobile) -->
+        <button id="boost-btn" class="premium-btn hidden">BOOST</button>
+
+        <!-- Overlay Screens -->
+        <div id="overlay">
+            <div id="menu-screen" class="screen">
+                <h1 class="glitch" data-text="MAZE CHASER">MAZE CHASER</h1>
+                <p>추격자를 피해 에너지를 모으고 미로를 탈출하세요.</p>
+                <div class="menu-buttons">
+                    <button id="start-btn" class="premium-btn">게임 시작</button>
+                    <button id="store-btn" class="premium-btn">상점 & 업그레이드</button>
+                </div>
+            </div>
+
+            <div id="store-screen" class="screen hidden">
+                <h2>GARAGE & UPGRADES</h2>
+                <div class="store-grid">
+                    <div class="store-item">
+                        <span>ENGINE (MAX SPEED)</span>
+                        <button id="upgrade-speed" class="upgrade-btn">UPGRADE (500 pts)</button>
+                    </div>
+                    <div class="store-item">
+                        <span>BATTERY (BOOST DURATION)</span>
+                        <button id="upgrade-boost" class="upgrade-btn">UPGRADE (500 pts)</button>
+                    </div>
+                    <div class="store-item premium">
+                        <span>PREMIUM HYPER CAR</span>
+                        <button id="buy-hypercar" class="upgrade-btn gold">BUY ($4.99)</button>
+                    </div>
+                </div>
+                <button id="back-to-menu" class="premium-btn">뒤로 가기</button>
+            </div>
+
+            <div id="game-over-screen" class="screen hidden">
+                <h2 class="danger-text">CAPTURED</h2>
+                <p>추격자에게 잡혔습니다!</p>
+                <button id="retry-btn" class="premium-btn">다시 시도</button>
+            </div>
+
+            <div id="victory-screen" class="screen hidden">
+                <h2 class="victory-text">ESCAPED</h2>
+                <p id="reward-text">보상: 1000 POINTS</p>
+                <button id="next-btn" class="premium-btn">다음 레벨</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="src/maze.js"></script>
+    <script src="src/car.js"></script>
+    <script src="src/enemy.js"></script>
+    <script src="src/minimap.js"></script>
+    <script src="src/main.js"></script>
+</body>
+</html>
