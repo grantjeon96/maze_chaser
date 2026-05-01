@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Maze Chaser - 미로 추격자 (Mobile Ultra Fix)</title>
+    <title>Maze Chaser - Mobile Master v2</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Orbitron:wght@500;900&display=swap" rel="stylesheet">
@@ -28,15 +28,10 @@ h1.glitch { font-family: var(--font-display); font-size: 3rem; font-weight: 900;
 .danger-text { color: var(--danger-color); font-family: var(--font-display); font-size: 2.5rem; }
 .victory-text { color: var(--victory-color); font-family: var(--font-display); font-size: 2.5rem; }
 .hidden { display: none !important; }
-#energy-container { display: flex; align-items: center; gap: 10px; }
 #energy-bar-bg { width: 100px; height: 10px; background: rgba(255, 255, 255, 0.1); border-radius: 5px; overflow: hidden; }
 #energy-bar-fill { width: 0%; height: 100%; background: linear-gradient(90deg, var(--secondary-color), var(--primary-color)); box-shadow: 0 0 10px var(--primary-color); transition: width 0.3s ease; }
-.store-grid { display: grid; grid-template-columns: 1fr; gap: 15px; margin: 20px 0; }
-.store-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.03); padding: 15px; border-radius: 12px; border: 1px solid var(--glass-border); }
-.store-item.premium { border-color: gold; background: rgba(255, 215, 0, 0.05); }
-.upgrade-btn { padding: 8px 15px; background: var(--primary-color); color: black; border: none; border-radius: 5px; font-family: var(--font-display); font-size: 0.7rem; cursor: pointer; }
-#boost-btn { position: absolute; bottom: 50px; right: 50px; width: 100px; height: 100px; border-radius: 50%; z-index: 10; font-size: 0.9rem; border-width: 4px; background: rgba(255, 0, 234, 0.1); color: var(--secondary-color); border-color: var(--secondary-color); }
-@media (max-width: 600px) { #hud { top: 10px; left: 10px; } #minimap-container { top: 10px; right: 10px; width: 100px; height: 100px; } h1.glitch { font-size: 2rem; } #energy-bar-bg { width: 60px; } }
+#boost-btn { position: absolute; bottom: 50px; right: 50px; width: 100px; height: 100px; border-radius: 50%; z-index: 10; font-size: 0.9rem; border-width: 4px; background: rgba(255, 0, 234, 0.1); color: var(--secondary-color); border-color: var(--secondary-color); display: none; }
+@media (max-width: 600px) { #hud { top: 10px; left: 10px; } #minimap-container { top: 10px; right: 10px; width: 100px; height: 100px; } h1.glitch { font-size: 2rem; } }
     </style>
 </head>
 <body>
@@ -46,24 +41,23 @@ h1.glitch { font-family: var(--font-display); font-size: 3rem; font-weight: 900;
             <div class="hud-item" id="timer-display">TIME: 05:00</div>
             <div class="hud-item" id="speed-display">SPEED: 0 km/h</div>
             <div class="hud-item" id="points-display">POINTS: 0</div>
-            <div class="hud-item" id="energy-container"><span>ENERGY</span><div id="energy-bar-bg"><div id="energy-bar-fill"></div></div></div>
+            <div class="hud-item"><span>ENERGY</span><div id="energy-bar-bg"><div id="energy-bar-fill"></div></div></div>
             <div class="hud-item" id="status-display">STATUS: PATROL</div>
         </div>
         <div id="minimap-container"><canvas id="minimap-canvas"></canvas></div>
         <div id="joystick-wrapper"><div id="joystick-base"><div id="joystick-stick"></div></div></div>
-        <button id="boost-btn" class="premium-btn hidden">BOOST</button>
+        <button id="boost-btn" class="premium-btn">BOOST</button>
         <div id="overlay">
             <div id="menu-screen" class="screen">
-                <h1 class="glitch" data-text="MAZE CHASER">MAZE CHASER</h1>
+                <h1 class="glitch">MAZE CHASER</h1>
                 <p>추격자를 피해 탈출구(EXIT)를 찾으세요!</p>
                 <div class="menu-buttons"><button id="start-btn" class="premium-btn">게임 시작</button><button id="store-btn" class="premium-btn">상점</button></div>
             </div>
             <div id="store-screen" class="screen hidden">
                 <h2>GARAGE</h2>
-                <div class="store-grid">
-                    <div class="store-item"><span>ENGINE (SPEED)</span><button id="upgrade-speed" class="upgrade-btn">UPGRADE (500 pts)</button></div>
-                    <div class="store-item"><span>BATTERY (BOOST)</span><button id="upgrade-boost" class="upgrade-btn">UPGRADE (500 pts)</button></div>
-                    <div class="store-item premium"><span>HYPER CAR</span><button id="buy-hypercar" class="upgrade-btn">BUY ($4.99)</button></div>
+                <div style="margin: 20px 0; display: flex; flex-direction: column; gap: 10px;">
+                    <button id="upgrade-speed" class="premium-btn">SPEED UP (500 pts)</button>
+                    <button id="buy-hypercar" class="premium-btn" style="color: gold; border-color: gold;">HYPER CAR ($4.99)</button>
                 </div>
                 <button id="back-to-menu" class="premium-btn">뒤로 가기</button>
             </div>
@@ -75,22 +69,24 @@ h1.glitch { font-family: var(--font-display); font-size: 3rem; font-weight: 900;
 class Maze {
     constructor(cols, rows, cellSize) {
         this.cols = cols; this.rows = rows; this.cellSize = cellSize;
-        this.grid = []; this.items = []; this.startCell = {r:0, c:0}; this.exitCell = {r:rows-1, c:cols-1};
+        this.grid = []; this.items = []; this.startCell = {r:0,c:0}; this.exitCell = {r:rows-1,c:cols-1};
         this.initGrid();
     }
     initGrid() {
+        this.grid = [];
         for (let r = 0; r < this.rows; r++) {
             let row = [];
-            for (let c = 0; c < this.cols; c++) { row.push({ r, c, walls: [true, true, true, true], visited: false }); }
+            for (let c = 0; c < this.cols; c++) row.push({ r, c, walls: [true, true, true, true], visited: false });
             this.grid.push(row);
         }
     }
     generate() {
+        this.initGrid();
         let current = this.grid[0][0]; current.visited = true; let stack = [current];
         while (stack.length > 0) {
             let next = this.getNeighbor(current);
             if (next) { next.visited = true; stack.push(current); this.removeWalls(current, next); current = next; }
-            else { current = stack.pop(); }
+            else current = stack.pop();
         }
         const qs = Math.floor(this.cols/2);
         this.startCell = { r: Math.floor(Math.random()*qs), c: Math.floor(Math.random()*qs) };
@@ -117,7 +113,7 @@ class Maze {
         ctx.strokeStyle = "rgba(0, 242, 255, 0.3)"; ctx.lineWidth = 2;
         for(let r=0; r<this.rows; r++) {
             for(let c=0; c<this.cols; c++) {
-                let cell = this.grid[r][c]; let x = c*this.cellSize; let y = r*this.cellSize;
+                let cell = this.grid[r][c], x=c*this.cellSize, y=r*this.cellSize;
                 if(cell.walls[0]) this.line(ctx,x,y,x+this.cellSize,y);
                 if(cell.walls[1]) this.line(ctx,x+this.cellSize,y,x+this.cellSize,y+this.cellSize);
                 if(cell.walls[2]) this.line(ctx,x+this.cellSize,y+this.cellSize,x,y+this.cellSize);
@@ -148,6 +144,7 @@ class Car {
         this.width=25; this.height=25; this.color=color;
         this.energy=50; this.maxEnergy=100; this.isBoosting=false; this.boostTimer=0;
     }
+    reset(x,y) { this.x=x; this.y=y; this.vx=0; this.vy=0; this.angle=0; this.energy=50; this.isBoosting=false; }
     update(ctrl, maze) {
         let cm = this.maxSpeed, ca = this.acceleration;
         if(this.energy <= 0) { cm *= 0.6; ca *= 0.6; }
@@ -173,50 +170,39 @@ class Car {
 
 class Enemy {
     constructor(x,y,cs,color="#ff2d55") {
-        this.x=x; this.y=y; this.angle=0; this.speed=1.2; this.state="PATROL";
-        this.color=color; this.width=25; this.height=15; this.target=null; this.cs=cs; this.path=[]; this.stuck=0;
+        this.x=x; this.y=y; this.angle=0; this.speed=1.4; this.state="PATROL";
+        this.color=color; this.width=25; this.height=15; this.target=null; this.cs=cs; this.path=[];
     }
     update(p, maze) {
         const dist = Math.hypot(p.x-this.x, p.y-this.y);
         if(dist < 250) this.state="PURSUIT"; else if(dist > 400) this.state="PATROL";
         if(this.state==="PURSUIT") this.pursue(p,maze); else this.patrol(maze);
-        this.move(maze);
+        this.move();
     }
-    move(maze) {
+    move() {
         if(!this.target) return;
-        const tx = (this.target.c + 0.5) * this.cs, ty = (this.target.r + 0.5) * this.cs;
-        const curC = Math.floor(this.x / this.cs), curR = Math.floor(this.y / this.cs);
-        if (curC === this.target.c && curR === this.target.r) {
-            if (Math.hypot(tx - this.x, ty - this.y) < 15) { this.target = this.path.length > 0 ? this.path.shift() : null; return; }
-        }
-        const a = Math.atan2(ty - this.y, tx - this.x); this.angle += (a - this.angle) * 0.15;
-        const vx = Math.cos(this.angle) * this.speed, vy = Math.sin(this.angle) * this.speed;
-        const px = this.x, py = this.y;
-        if (!maze.isWall(this.x + vx, this.y + vy)) { this.x += vx; this.y += vy; }
-        else { if (!maze.isWall(this.x + vx, this.y)) this.x += vx; else if (!maze.isWall(this.x, this.y + vy)) this.y += vy; }
-        if (Math.hypot(this.x - px, this.y - py) < 0.1) {
-            this.stuck++;
-            if (this.stuck > 30) {
-                this.x += (tx - this.x) * 0.1; this.y += (ty - this.y) * 0.1; // Pull to center
-                if (this.stuck > 60) { this.target = null; this.path = []; this.stuck = 0; }
-            }
-        } else this.stuck = 0;
+        const tx=(this.target.c+0.5)*this.cs, ty=(this.target.r+0.5)*this.cs;
+        const dx=tx-this.x, dy=ty-this.y, d=Math.hypot(dx,dy);
+        if(d < 5) { this.x=tx; this.y=ty; this.target=this.path.length>0?this.path.shift():null; return; }
+        const a=Math.atan2(dy,dx); this.angle=a;
+        this.x+=Math.cos(a)*this.speed; this.y+=Math.sin(a)*this.speed;
     }
     pursue(p,maze) {
-        if(this.path.length===0 || Math.random()<0.02) {
+        if(this.path.length===0 || Math.random()<0.05) {
             let s={c:Math.floor(this.x/this.cs), r:Math.floor(this.y/this.cs)};
             let e={c:Math.floor(p.x/this.cs), r:Math.floor(p.y/this.cs)};
-            this.path=this.bfs(s,e,maze); this.target=this.path.shift();
+            this.path=this.bfs(s,e,maze); if(this.path.length>0) this.target=this.path.shift();
         }
     }
     patrol(maze) {
         if(!this.target) {
             let s={c:Math.floor(this.x/this.cs), r:Math.floor(this.y/this.cs)};
             let rr=Math.floor(Math.random()*maze.rows), rc=Math.floor(Math.random()*maze.cols);
-            this.path=this.bfs(s,{r:rr,c:rc},maze); this.target=this.path.shift();
+            this.path=this.bfs(s,{r:rr,c:rc},maze); if(this.path.length>0) this.target=this.path.shift();
         }
     }
     bfs(s,e,maze) {
+        if (s.c === e.c && s.r === e.r) return [];
         let q=[[s]], v=new Set(); v.add(`${s.c},${s.r}`);
         while(q.length>0) {
             let p=q.shift(), cur=p[p.length-1]; if(cur.c===e.c && cur.r===e.r) return p;
@@ -254,78 +240,80 @@ let maze, player, enemies=[], minimap, gameState="MENU", startTime, points=0, le
 const ctrl = { forward: false, reverse: false, left: false, right: false, boost: false };
 
 function init() {
-    resize(); let ms = 10 + level * 2, cs = 100;
-    maze = new Maze(ms, ms, cs); maze.generate();
-    player = new Car((maze.startCell.c+0.5)*cs, (maze.startCell.r+0.5)*cs);
+    const ms = 10 + level * 2, cs = 100;
+    if(!maze) maze = new Maze(ms, ms, cs);
+    else { maze.cols = maze.rows = ms; }
+    maze.generate();
+    if(!player) player = new Car(0,0);
+    player.reset((maze.startCell.c+0.5)*cs, (maze.startCell.r+0.5)*cs);
     enemies = []; for (let i = 0; i < level; i++) {
         let er, ec; do { er = Math.floor(Math.random()*ms); ec = Math.floor(Math.random()*ms); } while(Math.hypot(ec-maze.startCell.c, er-maze.startCell.r) < 5);
         enemies.push(new Enemy((ec+0.5)*cs, (er+0.5)*cs, cs));
     }
     minimap = new Minimap(minCan, maze);
 }
-function startGame() { gameState="PLAYING"; document.getElementById("overlay").classList.add("hidden"); startTime=Date.now(); }
-function showStore() { document.getElementById("menu-screen").classList.add("hidden"); document.getElementById("store-screen").classList.remove("hidden"); }
-function showMenu() { document.getElementById("store-screen").classList.add("hidden"); document.getElementById("menu-screen").classList.remove("hidden"); }
-function nextLevel() { level++; init(); startGame(); }
-function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; minCan.width = 150; minCan.height = 150; }
-function upgrade(t) { if (points >= 500) { points -= 500; if (t === 'speed') player.maxSpeed += 0.5; alert("UPGRADED!"); } }
-function initUI() {
-    document.getElementById("start-btn").onclick = startGame;
-    document.getElementById("store-btn").onclick = showStore;
-    document.getElementById("back-to-menu").onclick = showMenu;
-    document.getElementById("retry-btn").onclick = startGame;
-    document.getElementById("next-btn").onclick = nextLevel;
+function startGame() { 
+    gameState="PLAYING"; document.getElementById("overlay").classList.add("hidden"); 
+    document.getElementById("game-over-screen").classList.add("hidden");
+    document.getElementById("victory-screen").classList.add("hidden");
+    document.getElementById("menu-screen").classList.add("hidden");
+    startTime=Date.now(); 
+}
+function endGame(r) {
+    gameState = "ENDED"; document.getElementById("overlay").classList.remove("hidden");
+    if (r === "CAPTURED") document.getElementById("game-over-screen").classList.remove("hidden");
+    else document.getElementById("victory-screen").classList.remove("hidden");
+}
+function setup() {
+    init();
+    document.getElementById("start-btn").onclick = () => { level=1; points=0; init(); startGame(); };
+    document.getElementById("store-btn").onclick = () => { document.getElementById("menu-screen").classList.add("hidden"); document.getElementById("store-screen").classList.remove("hidden"); };
+    document.getElementById("back-to-menu").onclick = () => { document.getElementById("store-screen").classList.add("hidden"); document.getElementById("menu-screen").classList.remove("hidden"); };
+    document.getElementById("retry-btn").onclick = () => { init(); startGame(); };
+    document.getElementById("next-btn").onclick = () => { level++; init(); startGame(); };
+    
     const b = document.getElementById("boost-btn");
-    b.ontouchstart = (e) => { e.preventDefault(); ctrl.boost = true; }; b.ontouchend = () => { ctrl.boost = false; };
-    b.onmousedown = () => { ctrl.boost = true; }; b.onmouseup = () => { ctrl.boost = false; };
-    document.getElementById("upgrade-speed").onclick = () => upgrade('speed');
-    document.getElementById("buy-hypercar").onclick = () => { if(confirm("Buy Hyper Car?")){player.color="gold"; player.maxSpeed=6; player.acceleration=0.5; player.energy=100;} };
-}
-function initJoystick() {
-    const w = document.getElementById("joystick-wrapper"), b = document.getElementById("joystick-base"), s = document.getElementById("joystick-stick");
-    if (!("ontouchstart" in window)) return; w.style.display = "block"; document.getElementById("boost-btn").classList.remove("hidden");
-    let a = false, sp = { x: 0, y: 0 };
-    b.addEventListener("touchstart", (e) => { a = true; sp = { x: e.touches[0].clientX, y: e.touches[0].clientY }; });
+    b.onmousedown = b.ontouchstart = (e) => { e.preventDefault(); ctrl.boost = true; };
+    b.onmouseup = b.ontouchend = () => { ctrl.boost = false; };
+    
+    if ("ontouchstart" in window) { document.getElementById("joystick-wrapper").style.display = "block"; b.style.display="block"; }
+
+    window.addEventListener("keydown", (e) => { switch(e.key) { case "ArrowUp": case "w": ctrl.forward = true; break; case "ArrowDown": case "s": ctrl.reverse = true; break; case "ArrowLeft": case "a": ctrl.left = true; break; case "ArrowRight": case "d": ctrl.right = true; break; case " ": ctrl.boost = true; break; } });
+    window.addEventListener("keyup", (e) => { switch(e.key) { case "ArrowUp": case "w": ctrl.forward = false; break; case "ArrowDown": case "s": ctrl.reverse = false; break; case "ArrowLeft": case "a": ctrl.left = false; break; case "ArrowRight": case "d": ctrl.right = false; break; case " ": ctrl.boost = false; break; } });
+    
+    const base = document.getElementById("joystick-base"), stick = document.getElementById("joystick-stick");
+    let active = false, startPos = { x: 0, y: 0 };
+    base.addEventListener("touchstart", (e) => { active = true; startPos = { x: e.touches[0].clientX, y: e.touches[0].clientY }; });
     window.addEventListener("touchmove", (e) => {
-        if (!a) return; const dx = e.touches[0].clientX - sp.x, dy = e.touches[0].clientY - sp.y, d = Math.min(Math.hypot(dx, dy), 50), an = Math.atan2(dy, dx);
-        const x = Math.cos(an) * d, y = Math.sin(an) * d; s.style.transform = `translate(${x}px, ${y}px)`;
-        ctrl.forward = y < -10; ctrl.reverse = y > 10; ctrl.left = x < -10; ctrl.right = x > 10;
+        if (!active) return; const dx = e.touches[0].clientX - startPos.x, dy = e.touches[0].clientY - startPos.y;
+        const d = Math.min(Math.hypot(dx, dy), 50), a = Math.atan2(dy, dx);
+        stick.style.transform = `translate(${Math.cos(a)*d}px, ${Math.sin(a)*d}px)`;
+        ctrl.forward = dy < -10; ctrl.reverse = dy > 10; ctrl.left = dx < -10; ctrl.right = dx > 10;
     });
-    window.addEventListener("touchend", () => { a = false; s.style.transform = "translate(0, 0)"; ctrl.forward = ctrl.reverse = ctrl.left = ctrl.right = false; });
+    window.addEventListener("touchend", () => { active = false; stick.style.transform = "translate(0, 0)"; ctrl.forward = ctrl.reverse = ctrl.left = ctrl.right = false; });
+    
+    requestAnimationFrame(gameLoop);
 }
-function update() {
+function gameLoop() { if (gameState === "PLAYING") { 
     player.update(ctrl, maze); enemies.forEach(e => e.update(player, maze));
     maze.items = maze.items.filter(i => { if (Math.hypot(player.x - (i.c+0.5)*100, player.y - (i.r+0.5)*100) < 30) { player.energy = Math.min(player.energy + 25, player.maxEnergy); points += 50; return false; } return true; });
     for (let e of enemies) if (Math.hypot(player.x - e.x, player.y - e.y) < 25) { endGame("CAPTURED"); return; }
     if (Math.hypot(player.x - (maze.exitCell.c+0.5)*100, player.y - (maze.exitCell.r+0.5)*100) < 50) { points += 1000; endGame("ESCAPED"); }
     if ((Date.now() - startTime) / 1000 > 300) endGame("CAPTURED");
-}
-function draw() {
+    
     ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.save(); ctx.translate(canvas.width/2 - player.x, canvas.height/2 - player.y);
     maze.draw(ctx); player.draw(ctx); enemies.forEach(e => e.draw(ctx)); ctx.restore(); minimap.draw(player, enemies);
-}
-function updateHUD() {
-    const el = Math.floor((Date.now() - startTime) / 1000), rem = Math.max(0, 300 - el);
-    const m = String(Math.floor(rem/60)).padStart(2,'0'), s = String(rem%60).padStart(2,'0');
-    document.getElementById("timer-display").innerText = `TIME: ${m}:${s}`;
+    
+    const rem = Math.max(0, 300 - Math.floor((Date.now() - startTime) / 1000));
+    document.getElementById("timer-display").innerText = `TIME: ${String(Math.floor(rem/60)).padStart(2,'0')}:${String(rem%60).padStart(2,'0')}`;
     document.getElementById("speed-display").innerText = `SPEED: ${Math.floor(Math.abs(Math.hypot(player.vx, player.vy)) * 20)} km/h`;
     document.getElementById("points-display").innerText = `POINTS: ${points}`;
     document.getElementById("energy-bar-fill").style.width = `${(player.energy / player.maxEnergy) * 100}%`;
-}
-function endGame(r) {
-    gameState = "ENDED"; document.getElementById("overlay").classList.remove("hidden");
-    if (r === "CAPTURED") { document.getElementById("game-over-screen").classList.remove("hidden"); document.getElementById("menu-screen").classList.add("hidden"); }
-    else { document.getElementById("victory-screen").classList.remove("hidden"); document.getElementById("menu-screen").classList.add("hidden"); }
-}
-window.onresize = resize;
-window.addEventListener("keydown", (e) => {
-    switch(e.key) { case "ArrowUp": case "w": ctrl.forward = true; break; case "ArrowDown": case "s": ctrl.reverse = true; break; case "ArrowLeft": case "a": ctrl.left = true; break; case "ArrowRight": case "d": ctrl.right = true; break; case " ": ctrl.boost = true; break; }
-});
-window.addEventListener("keyup", (e) => {
-    switch(e.key) { case "ArrowUp": case "w": ctrl.forward = false; break; case "ArrowDown": case "s": ctrl.reverse = false; break; case "ArrowLeft": case "a": ctrl.left = false; break; case "ArrowRight": case "d": ctrl.right = false; break; case " ": ctrl.boost = false; break; }
-});
-function gameLoop() { if (gameState === "PLAYING") { update(); draw(); updateHUD(); } requestAnimationFrame(gameLoop); }
-init(); initUI(); initJoystick(); requestAnimationFrame(gameLoop);
+} requestAnimationFrame(gameLoop); }
+
+window.onresize = () => { canvas.width=window.innerWidth; canvas.height=window.innerHeight; };
+canvas.width=window.innerWidth; canvas.height=window.innerHeight;
+setup();
     </script>
 </body>
 </html>
