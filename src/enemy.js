@@ -25,7 +25,7 @@ class Enemy {
             }
             this.patrol(maze);
         }
-        this.move();
+        this.move(maze);
     }
 
     checkLOS(player, maze) {
@@ -46,7 +46,7 @@ class Enemy {
         return true;
     }
 
-    move() {
+    move(maze) {
         if (!this.targetCell) return;
 
         // Target center point
@@ -57,19 +57,27 @@ class Enemy {
         const dy = ty - this.y;
         const dist = Math.hypot(dx, dy);
 
-        // If we reached the current target cell center, pick the next one
-        if (dist < 5) {
-            this.x = tx;
-            this.y = ty;
+        if (dist < 15) {
             this.targetCell = this.path.length > 0 ? this.path.shift() : null;
             return;
         }
 
-        // Move strictly toward the center of the next cell
         const angle = Math.atan2(dy, dx);
         this.angle = angle;
-        this.x += Math.cos(angle) * this.speed;
-        this.y += Math.sin(angle) * this.speed;
+        
+        const vx = Math.cos(angle) * this.speed;
+        const vy = Math.sin(angle) * this.speed;
+        
+        // Zero-friction Wall Sliding
+        let moved = false;
+        if (!maze.isWall(this.x + vx, this.y)) { this.x += vx; moved = true; }
+        if (!maze.isWall(this.x, this.y + vy)) { this.y += vy; moved = true; }
+        
+        // Force escape if perfectly cornered
+        if (!moved) {
+            this.x += (tx - this.x) * 0.05;
+            this.y += (ty - this.y) * 0.05;
+        }
     }
 
     pursue(player, maze) {

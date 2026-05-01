@@ -177,15 +177,28 @@ class Enemy {
         const dist = Math.hypot(p.x-this.x, p.y-this.y);
         if(dist < 250) this.state="PURSUIT"; else if(dist > 400) this.state="PATROL";
         if(this.state==="PURSUIT") this.pursue(p,maze); else this.patrol(maze);
-        this.move();
+        this.move(maze);
     }
-    move() {
+    move(maze) {
         if(!this.target) return;
         const tx=(this.target.c+0.5)*this.cs, ty=(this.target.r+0.5)*this.cs;
         const dx=tx-this.x, dy=ty-this.y, d=Math.hypot(dx,dy);
-        if(d < 5) { this.x=tx; this.y=ty; this.target=this.path.length>0?this.path.shift():null; return; }
+        if(d < 15) { this.target=this.path.length>0?this.path.shift():null; return; }
         const a=Math.atan2(dy,dx); this.angle=a;
-        this.x+=Math.cos(a)*this.speed; this.y+=Math.sin(a)*this.speed;
+        
+        const vx = Math.cos(a) * this.speed;
+        const vy = Math.sin(a) * this.speed;
+        
+        // Zero-friction Wall Sliding
+        let moved = false;
+        if (!maze.isWall(this.x + vx, this.y)) { this.x += vx; moved = true; }
+        if (!maze.isWall(this.x, this.y + vy)) { this.y += vy; moved = true; }
+        
+        // Force escape if perfectly cornered
+        if (!moved) {
+            this.x += (tx - this.x) * 0.05;
+            this.y += (ty - this.y) * 0.05;
+        }
     }
     pursue(p,maze) {
         if(this.path.length===0 || Math.random()<0.05) {
